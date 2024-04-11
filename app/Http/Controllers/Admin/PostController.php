@@ -13,7 +13,15 @@ class PostController extends Controller
 {
     public function index()
     {
-        $posts = Post::with(['user', 'category', 'tags', 'comments'])->paginate(10);
+        $posts = Post::with(['user', 'category', 'tags', 'comments']);
+
+        if (!auth()->user()->is_admin) {
+            $posts = $posts
+                ->where('user_id', '=', auth()->user()->id)
+                ->orWhere('is_published', '=', 1);
+        }
+
+        $posts = $posts->paginate(10);
 
         return view('admin.posts.index', compact('posts'));
     }

@@ -7,9 +7,7 @@ use App\Http\Requests\PostRequest;
 use App\Models\Category;
 use App\Models\Post;
 use App\Models\Tag;
-use App\Notifications\PostCreated;
 use App\User;
-use Illuminate\Support\Facades\Notification;
 
 class PostController extends Controller
 {
@@ -60,10 +58,6 @@ class PostController extends Controller
 
         $post->tags()->attach($tagsId);
 
-        $admins = User::where('is_admin', 1)->get();
-        $notification = new PostCreated($post);
-
-        Notification::send($admins, $notification);
         flash()->overlay('Post created successfully.');
 
         return redirect('/admin/posts');

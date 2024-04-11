@@ -92,14 +92,17 @@ class PostController extends Controller
 
     public function update(PostRequest $request, Post $post)
     {
-        // TODO: check if user is authorized to update post
         $post->update(
-            [
-                'title'       => $request->title,
-                'body'        => $request->body,
-                'category_id' => $request->category_id,
-                'user_id'     => $request->user_id,
-            ]
+            array_merge(
+                [
+                    'title'       => $request->title,
+                    'body'        => $request->body,
+                    'category_id' => $request->category_id,
+                ],
+                (auth()->user()->is_admin ? [
+                    'user_id'     => $request->user_id,
+                ] : [])
+            )
         );
 
         $tagsId = collect($request->tags)->map(

@@ -2,6 +2,8 @@
 
 namespace App\Console;
 
+use App\Models\Post;
+use DateTime;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -24,8 +26,23 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')
-        //          ->hourly();
+       $schedule->call(function () {
+           try {
+               $date = (new DateTime)->format('m.Y');
+               $post = new Post;
+
+               $post->title = "Zusammenfassung ($date)";
+               $post->user_id = 1; // XXX: don't hardcode values
+               $post->body = '';
+               $post->category_id = 1; // XXX: don't hardcode values
+
+               $post->save();
+           } catch (\Exception $exception) {
+               error_log($exception->getMessage());
+               throw new \Exception(); // for the task to fail
+           }
+           return 0;
+       })->monthlyOn(1, '06:00');
     }
 
     /**

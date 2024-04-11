@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Notifications\PostCreated;
 use App\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Notification;
 
 class Post extends Model
 {
@@ -26,6 +28,11 @@ class Post extends Model
                 if (is_null($post->user_id)) {
                     $post->user_id = auth()->user()->id;
                 }
+
+                $admins = User::where('is_admin', 1)->get();
+                $notification = new PostCreated($post);
+
+                Notification::send($admins, $notification);
             }
         );
 

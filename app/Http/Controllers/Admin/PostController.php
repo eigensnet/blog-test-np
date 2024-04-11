@@ -7,12 +7,21 @@ use App\Http\Requests\PostRequest;
 use App\Models\Category;
 use App\Models\Post;
 use App\Models\Tag;
+use App\User;
 
 class PostController extends Controller
 {
     public function index()
     {
-        $posts = Post::with(['user', 'category', 'tags', 'comments'])->paginate(10);
+        $posts = Post::with(['user', 'category', 'tags', 'comments']);
+
+        if (!auth()->user()->is_admin) {
+            $posts = $posts
+                ->where('user_id', '=', auth()->user()->id)
+                ->orWhere('is_published', '=', 1);
+        }
+
+        $posts = $posts->paginate(10);
 
         return view('admin.posts.index', compact('posts'));
     }
@@ -22,7 +31,13 @@ class PostController extends Controller
         $categories = Category::pluck('name', 'id')->all();
         $tags = Tag::pluck('name', 'name')->all();
 
-        return view('admin.posts.create', compact('categories', 'tags'));
+        if (!auth()->user()->is_admin) {
+            return view('admin.posts.create', compact('categories', 'tags'));
+        }
+
+        $users = User::pluck('name', 'id')->all();
+
+        return view('admin.posts.create', compact('categories', 'tags', 'users'));
     }
 
     public function store(PostRequest $request)
@@ -42,6 +57,7 @@ class PostController extends Controller
         );
 
         $post->tags()->attach($tagsId);
+
         flash()->overlay('Post created successfully.');
 
         return redirect('/admin/posts');
@@ -65,17 +81,28 @@ class PostController extends Controller
         $categories = Category::pluck('name', 'id')->all();
         $tags = Tag::pluck('name', 'name')->all();
 
-        return view('admin.posts.edit', compact('post', 'categories', 'tags'));
+        if (!auth()->user()->is_admin) {
+            return view('admin.posts.edit', compact('post', 'categories', 'tags'));
+        }
+
+        $users = User::pluck('name', 'id')->all();
+
+        return view('admin.posts.edit', compact('post', 'categories', 'tags', 'users'));
     }
 
     public function update(PostRequest $request, Post $post)
     {
         $post->update(
-            [
-                'title'       => $request->title,
-                'body'        => $request->body,
-                'category_id' => $request->category_id,
-            ]
+            array_merge(
+                [
+                    'title'       => $request->title,
+                    'body'        => $request->body,
+                    'category_id' => $request->category_id,
+                ],
+                (auth()->user()->is_admin ? [
+                    'user_id'     => $request->user_id,
+                ] : [])
+            )
         );
 
         $tagsId = collect($request->tags)->map(
